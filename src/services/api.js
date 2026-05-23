@@ -1,6 +1,9 @@
 import axios from 'axios';
 
-const BASE_URL = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000';
+const BASE_URL = import.meta.env.VITE_API_URL || 
+  (import.meta.env.DEV 
+    ? 'http://127.0.0.1:8000'                            // local dev
+    : 'https://hinge-inspection-backend.onrender.com');  // production
 
 const api = axios.create({
   baseURL: BASE_URL,
