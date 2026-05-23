@@ -13,10 +13,13 @@ export function generateReport(results, file, logs, liveStats) {
     doc.text(text, (pageWidth - textWidth) / 2, y);
   };
 
-  // We calculate the time spent in each state
+  // We calculate the time spent and event counts in each state
   let leftMissingSec = 0;
   let rightMissingSec = 0;
   let bothGoodSec = 0;
+  let leftMissingEvents = 0;
+  let rightMissingEvents = 0;
+  let bothGoodEvents = 0;
   
   const videoObj = document.querySelector('video');
   const duration = (videoObj && videoObj.duration) ? videoObj.duration : 
@@ -30,9 +33,9 @@ export function generateReport(results, file, logs, liveStats) {
       
       const lMiss = !f.left;
       const rMiss = !f.right;
-      if (lMiss) leftMissingSec += timeSpent;
-      if (rMiss) rightMissingSec += timeSpent;
-      if (!lMiss && !rMiss) bothGoodSec += timeSpent;
+      if (lMiss) { leftMissingSec += timeSpent; leftMissingEvents++; }
+      if (rMiss) { rightMissingSec += timeSpent; rightMissingEvents++; }
+      if (!lMiss && !rMiss) { bothGoodSec += timeSpent; bothGoodEvents++; }
     });
   }
 
@@ -67,9 +70,9 @@ export function generateReport(results, file, logs, liveStats) {
   doc.setTextColor(...boxColor);
   doc.setFont('helvetica', 'bold');
   
-  doc.text(`Left Missing: ${isLeftMissing ? 'YES' : 'NO'} (${isLeftMissing ? 1 : 0})`, 25, 100);
-  doc.text(`Right Missing: ${isRightMissing ? 'YES' : 'NO'} (${isRightMissing ? 1 : 0})`, 25, 115);
-  doc.text(`Both Good: ${isGood ? 'YES' : 'NO'} (${isGood ? 1 : 0})`, 115, 100);
+  doc.text(`Left Missing: ${isLeftMissing ? 'YES' : 'NO'} (${leftMissingEvents} events, ${leftMissingSec.toFixed(1)}s)`, 25, 100);
+  doc.text(`Right Missing: ${isRightMissing ? 'YES' : 'NO'} (${rightMissingEvents} events, ${rightMissingSec.toFixed(1)}s)`, 25, 115);
+  doc.text(`Both Good: ${bothGoodEvents > 0 ? 'YES' : 'NO'} (${bothGoodEvents} events, ${bothGoodSec.toFixed(1)}s)`, 115, 100);
   
   // Graphical Barcode in PDF
   let barY = 135;
