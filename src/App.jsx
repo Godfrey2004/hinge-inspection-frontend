@@ -7,7 +7,7 @@ import UploadPanel from './components/UploadPanel';
 import VideoPreview from './components/VideoPreview';
 import AnalyticsDashboard from './components/AnalyticsDashboard';
 import ActivityConsole from './components/ActivityConsole';
-import { getProcessedVideoUrl } from './services/api';
+import { runInspection, getProcessedVideoUrl } from './services/api';
 import { generateReport } from './utils/pdfGenerator';
 
 function getTimestamp() {
@@ -46,7 +46,7 @@ export default function App() {
   const [logs, setLogs] = useState([
     makeLog('system', 'System initialized. Awaiting video input.'),
   ]);
-  const [liveStats, setLiveStats] = useState({ left: null, right: null });
+  const [liveStats, setLiveStats] = useState(null);
 
   // Force scroll to top on refresh
   useEffect(() => {
@@ -86,30 +86,18 @@ export default function App() {
 
     setError(null);
     setUploadProgress(0);
+    setLiveStats(null);
     addLog('info', 'Upload started — sending video to backend...');
-
-    // ── Switch to processing immediately so UI never appears frozen ──────
-    // On localhost, onUploadProgress doesn't fire intermediate events,
-    // so we show the AI animation right away instead of waiting for pct===100.
     setAppState('processing');
     addLog('success', 'Video received. AI engine initializing...');
     addLog('info', 'Loading hinge detection model (YOLO)...');
 
-    const formData = new FormData();
-    formData.append('file', file);
-
     try {
-      // Send file + wait for YOLO to finish (backend is synchronous)
-      const uploadResponse = await axios.post('http://127.0.0.1:8000/upload-video', formData, {
-        headers: { 'Content-Type': 'multipart/form-data' },
-      });
+      // Use api.js which points to the correct backend (Render in prod, localhost in dev)
+      const data = await runInspection(file, (pct) => setUploadProgress(pct));
 
-      // ── Phase 2: Response received ──────────────────────────────────────
       addLog('info', 'Processing frames — running YOLO inference...');
 
-      const data = uploadResponse.data;
-
-      // ── Phase 3: Parse & finish ─────────────────────────────────────────
       const mapped = mapResults(data);
       setResults(mapped);
 
@@ -118,7 +106,6 @@ export default function App() {
         addLog('info', 'Processed video ready.');
       }
 
-      // Hinge-specific logs
       if (mapped.leftHinge === 'Present') {
         addLog('success', `Left hinge detected (Confidence: ${mapped.confidence}).`);
       } else {
@@ -144,7 +131,7 @@ export default function App() {
       const msg =
         err?.response?.data?.detail ??
         (err.code === 'ERR_NETWORK'
-          ? 'Cannot reach backend. Make sure the server is running on http://127.0.0.1:8000.'
+          ? 'Cannot reach backend. Make sure the server is running.'
           : err.message ?? 'An unexpected error occurred.');
 
       setError(msg);

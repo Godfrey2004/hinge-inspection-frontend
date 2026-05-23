@@ -60,9 +60,9 @@ export default function AnalyticsDashboard({ appState, file, results, liveStats,
 
   const r = results ?? {};
   
-  // Use live stats if available, fallback to total aggregated results
-  const leftVal = liveStats?.left ?? r.leftHinge;
-  const rightVal = liveStats?.right ?? r.rightHinge;
+  // Use live stats if video is playing, fallback to final aggregated results
+  const leftVal  = liveStats?.left  ?? r.leftHinge  ?? 'N/A';
+  const rightVal = liveStats?.right ?? r.rightHinge ?? 'N/A';
   
   // Dynamically compute inspection based on current left/right status
   const inspectionVal = (leftVal === 'Present' && rightVal === 'Present') ? 'Good' : 'Missing';
